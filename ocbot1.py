@@ -1,10 +1,26 @@
 import praw
+import tenacity
 import re
 import os
 import time
 import random
 import threading
+import logging
 
+import ocbotlog
+
+from praw.exceptions import APIException, ClientException
+from prawcore.exceptions import RequestException, ResponseException, ServerError
+from requests.exceptions import ConnectionError, HTTPError, ReadTimeout
+
+RECOVERABLE_EXCEPTIONS = (APIException,
+						ClientException,
+						ConnectionError,
+						HTTPError,
+						ReadTimeout,
+						RequestException,
+						ResponseException,
+						ServerError)
 
 reddit = praw.Reddit(username='OC-Bot',password='[login-creds]', client_id='[login-creds]',client_secret='[login-creds]',user_agent='[login-creds]')
 
@@ -82,6 +98,7 @@ phrases = {
 	}
 }
 
+DEFAULT_DELAY = 60
 
 
 def opener(filename='records.txt', action='r'):
@@ -106,9 +123,9 @@ class Sticky(object):
 			return False
 
 	def submit_to_database(self, comment_id):
-			db = opener(action='a')
-			db.write(comment_id + ' ')
-			db.close()
+		db = opener(action='a')
+		db.write(comment_id + ' ')
+		db.close()
 
 	def check_submission(self):
 		if self.check_database(self.submission.id) is False and re.search('([\[\(\{]([Oo][Cc])[\]\}\)])',str(self.submission.title)) and self.submission.approved_by is not None:
@@ -124,30 +141,22 @@ class Sticky(object):
 				os.system('pause')
 
 	def sticky(self):
-		try:
-			if self.check_submission() is True:
-				print('A submission has been marked OC')
-				try:
-					comments = [comment for comment in [item for item in reddit.redditor(self.author).new(limit=100) if str(type(item)) == "<class 'praw.models.reddit.comment.Comment'>"] if comment.submission == self.submission]
-				except:
-					return
-			else:
-				return
-			oldest = comments[0]
-			for comment in comments:
-				if comment.created_utc < oldest.created_utc:
-					oldest = comments[comments.index(comment)]
-			if self.check_database(oldest.id) is not True:
-				reply = 'Thank you for your Original Content, /u/{}! I\'ve added [your flair](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair) as gratitude. **Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{}) for this thread\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{}\"+title%3A[OC]&sort=new&restrict_sr=on)\n\nI hope this sticky assists you in having an informed discussion in this thread, or inspires you to [remix](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) this data. For more information, please [read this Wiki page](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair).'.format(self.author,oldest.permalink,self.author)
-				(self.submission.reply(reply)).mod.distinguish(sticky=True)
-				self.submit_to_database(oldest.id)
-			else:
-				pass
-			print('Stickied comment')
-		except Exception as e:
-			print('sticky method exception: ' + str(e))
-			#reddit.redditor('zonination').message('Error','I received the following error, please investigate. Reply with !stop to this message and I will cease running.\n\n{}'.format(e))
-			time.sleep(60)
+		if self.check_submission() is True:
+			ocbotlog.getLogger().info('A submission has been marked OC')
+			comments = [comment for comment in [item for item in reddit.redditor(self.author).new(limit=100) if str(type(item)) == "<class 'praw.models.reddit.comment.Comment'>"] if comment.submission == self.submission]
+		else:
+			return
+		oldest = comments[0]
+		for comment in comments:
+			if comment.created_utc < oldest.created_utc:
+				oldest = comments[comments.index(comment)]
+		if self.check_database(oldest.id) is not True:
+			reply = 'Thank you for your Original Content, /u/{}! I\'ve added [your flair](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair) as gratitude. **Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{}) for this thread\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{}\"+title%3A[OC]&sort=new&restrict_sr=on)\n\nI hope this sticky assists you in having an informed discussion in this thread, or inspires you to [remix](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) this data. For more information, please [read this Wiki page](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair).'.format(self.author,oldest.permalink,self.author)
+			(self.submission.reply(reply)).mod.distinguish(sticky=True)
+			self.submit_to_database(oldest.id)
+		else:
+			pass
+		ocbotlog.getLogger().info('Stickied comment')
 
 class Flair(object):
 
@@ -160,33 +169,21 @@ class Flair(object):
 
 	def __flair__(self):
 		count = 0
-		print('Checking /u/{}'.format(self.author))
-		try:
-			for post in reddit.subreddit(self.subreddit).search('author:"{}"'.format(self.author), limit=1000, syntax='lucene'):
-				if post.approved_by is not None and re.search('([\[\(\{]([Oo][Cc])[\]\}\)])',str(post.title)):
-					count += 1
-			return count
-		except Exception as e:
-			print('Unable to complete flairing due to {}'.format(e))
-			count = None 
-			return count
+		ocbotlog.getLogger().info('Checking /u/{}'.format(self.author))
+		for post in reddit.subreddit(self.subreddit).search('author:"{}"'.format(self.author), limit=1000, syntax='lucene'):
+			if post.approved_by is not None and re.search('([\[\(\{]([Oo][Cc])[\]\}\)])',str(post.title)):
+				count += 1
+		return count
 
 	def set_flair(self):
 		count = self.__flair__()
-		try:
-			current_int = int(re.sub('OC:\s','',str(self.submission.author_flair_text)[4:]))
-		except:
-			current_int = 0
-		try:
-			if count != None and count != 0 and str(self.submission.author_flair_css_class) not in self.special_flairs and current_int < count:
-				reddit.subreddit(str(self.subreddit)).flair.set(redditor=str(self.author),text='OC: {}'.format(count), css_class = 'ocmaker')
-				print('Flairing /u/{} with OC: {}'.format(self.author, count))
-		except Exception as e:
-			print(e)
+		current_int = int(re.sub('OC:\s','',str(self.submission.author_flair_text)[4:]))
+		if count != None and count != 0 and str(self.submission.author_flair_css_class) not in self.special_flairs and current_int < count:
+			reddit.subreddit(str(self.subreddit)).flair.set(redditor=str(self.author),text='OC: {}'.format(count), css_class = 'ocmaker')
+			ocbotlog.getLogger().info('Flairing /u/{} with OC: {}'.format(self.author, count))
 
 
 class commentResponse(object):
-
 
 	def __init__(self,comment):
 		self.comment = comment
@@ -212,31 +209,56 @@ class commentResponse(object):
 	def reply(self):
 		if self.parent == reddit.user.me().name and self.check_database(self.comment.id) is False:
 			self.comment.reply(self.response)
-			print('Replied to /u/{}'.format(self.comment.author))
+			ocbotlog.getLogger().info('Replied to /u/{}'.format(self.comment.author))
 
 
 def submission_thread_starter(subreddit, thread_type):
 	if thread_type == 0:
-		while True:
-			for submission in reddit.subreddit(subreddit).hot(limit=100):
-				Sticky(submission).sticky()
+		try:
+			while True:
+				sticky_run(subreddit)
+		except:
+			ocbotlog.getLogger().exception("Unable to complete stickying due to: ")
+			raise
 	else:
-		while True:
-			for submission in reddit.subreddit(subreddit).hot(limit=100):
-				Flair(submission, subreddit)
+		try:
+			while True:
+				flair_run(subreddit)
+		except:
+			ocbotlog.getLogger().exception("Unable to complete flairing due to: ")
+			raise
 
 def comment_thread_starter(subreddit):
-	while True:
-		for comment in reddit.subreddit(subreddit).comments(limit=50):
-			commentResponse(comment).reply()
+	try:
+		while True:
+			comment_haiku_run(subreddit)
+	except:
+		ocbotlog.getLogger().exception("Unable to complete comment response due to: ")
+		raise
+
+@tenacity.retry(wait=tenacity.wait_fixed(DEFAULT_DELAY), retry=tenacity.retry_if_exception_type(RECOVERABLE_EXCEPTIONS), after=tenacity.after_log(ocbotlog.getLogger(), logging.WARNING), reraise=True)
+def sticky_run(subreddit):
+	for submission in reddit.subreddit(subreddit).hot(limit=100):
+		Sticky(submission).sticky()
+
+@tenacity.retry(wait=tenacity.wait_fixed(DEFAULT_DELAY), retry=tenacity.retry_if_exception_type(RECOVERABLE_EXCEPTIONS), after=tenacity.after_log(ocbotlog.getLogger(), logging.WARNING), reraise=True)
+def flair_run(subreddit):
+	for submission in reddit.subreddit(subreddit).hot(limit=100):
+		Flair(submission, subreddit)
+
+@tenacity.retry(wait=tenacity.wait_fixed(DEFAULT_DELAY), retry=tenacity.retry_if_exception_type(RECOVERABLE_EXCEPTIONS), after=tenacity.after_log(ocbotlog.getLogger(), logging.WARNING), reraise=True)
+def comment_haiku_run(subreddit):
+	for comment in reddit.subreddit(subreddit).comments(limit=50):
+		commentResponse(comment).reply()
 
 def main():
+	ocbotlog.prep()
 	for subreddit in subreddits:
 		threading.Thread(target=submission_thread_starter, kwargs={'subreddit':subreddit, 'thread_type':0}).start()
 		threading.Thread(target=comment_thread_starter, kwargs={'subreddit':subreddit}).start()
 		threading.Thread(target=submission_thread_starter, kwargs={'subreddit':subreddit, 'thread_type':1}).start()
 	time.sleep(3)
-	print('There are currently {} active threads'.format(threading.activeCount()))
+	ocbotlog.getLogger().info('There are currently {} active threads'.format(threading.activeCount()))
 
 
 if __name__ == '__main__':
