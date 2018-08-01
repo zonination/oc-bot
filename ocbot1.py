@@ -178,10 +178,11 @@ class Flair(object):
 	def set_flair(self):
 		count = self.__flair__()
 		flair_text = self.submission.author_flair_text
-		if flair_text:
+		try:
 			current_int = int(re.sub('OC:\s','',str(flair_text)[4:]))
-		else:
+		except ValueError:
 			current_int = 0
+
 		if count != None and count != 0 and str(self.submission.author_flair_css_class) not in self.special_flairs and current_int < count:
 			reddit.subreddit(str(self.subreddit)).flair.set(redditor=str(self.author),text='OC: {}'.format(count), css_class = 'ocmaker')
 			ocbotlog.getLogger().info('Flairing /u/{} with OC: {}'.format(self.author, count))
