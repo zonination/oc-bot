@@ -27,6 +27,7 @@
 
 **THEN:**
 * Make a sticky linking to the first submitter's comment on the post AND
+* Add a point to the user's flair AND
 * Log the post it made a sticky on
 
 ### Secondary operations
