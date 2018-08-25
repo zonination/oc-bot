@@ -21,15 +21,15 @@ sub = 'dataisbeautiful'
 #   IF:
 #     * Post has the text [OC] in the title AND
 #     * The post is approved by a mod AND
-#     * The user's flair is NOT a reserved flair AND
 #     * The post has NOT been logged before
 #   THEN:
+#     * Add a point to the user's flair OR ignore flair if it's a reserved flair AND
 #     * Make a sticky linking to the first submitter's comment on the post AND
-#     * Add a point to the user's flair AND
 #     * Log the post it made a sticky on
 # -------------------------
 # Secondary Objective
 #   * The bot replies to comments made on the sticky with a randomly-generated haiku.
+#   * The bot replies to direct messages (PM) that she cannot help, but should contact the mods of /r/dataisbeautiful to help.
 #   * The bot forwards direct messages (PM) to the mods of /r/dataisbeautiful
 # -------------------------
 
