@@ -2,7 +2,7 @@
 
 **Table of Contents**
 1. [Introduction](https://github.com/zonination/oc-bot#introduction)    
-2. [Functions](https://github.com/zonination/oc-bot#functions)
+2. [Functions](https://github.com/zonination/oc-bot#functions)    
     2.1 [Primary Operation](https://github.com/zonination/oc-bot#primary-operation)    
     2.2 [Secondary Operations](https://github.com/zonination/oc-bot#secondary-operations)
 
