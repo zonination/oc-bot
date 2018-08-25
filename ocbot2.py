@@ -46,7 +46,6 @@ def sticky(submission):
             earliest = comment
             time = earliest.created_utc
     print('  Citation ID: {0}'.format(earliest.id))
-    l.write('\n  Citation ID: {0}'.format(earliest.id))
     
     # Construct the reply sticky
     reply = 'Thank you for your Original Content, /u/{0}!  \n**Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{1}) for this thread\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{0}\"+title%3A[OC]&sort=new&restrict_sr=on)\n\nI hope this sticky assists you in having an informed discussion in this thread, or inspires you to [remix](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) this data. For more information, please [read this Wiki page](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair).\n\n---\n\n^^OC-Bot&nbsp;v2.0 ^^| ^^[Fork&nbsp;with&nbsp;my&nbsp;code](https://github.com/zonination/oc-bot) ^^| ^^[Message&nbsp;the&nbsp;mods](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Assistance%20with%20the%20bot)'.format(submission.author.name, earliest.permalink)
@@ -56,7 +55,6 @@ def sticky(submission):
     for comment in r.redditor('OC-bot').comments.new(limit=1):
         last = comment.id
     print('  Sticky ID: {0}\n'.format(last))
-    l.write('\n  Sticky ID: {0}\n\n'.format(last))
     return None
 
 def flair(author):
@@ -102,9 +100,6 @@ while True:
         # Main loop for Primary Objective
         for submission in r.subreddit(sub).hot(limit=100):
             
-            # Print to a text file for now
-            l=open('.log.txt', 'a')
-            
             # Load records
             f=open('.record.txt', 'r')
             slist=f.read().split(' ')
@@ -115,7 +110,6 @@ while True:
                 
                 # Initial printout
                 print('{0}\n  Submission ID: {1}\n  Author: {2}\n  Approved by: {3}'.format(submission.title,submission.id, submission.author.name, submission.approved_by))
-                l.write('{0}\n  Submission ID: {1}\n  Author: {2}\n  Approved by: {3}'.format(submission.title,submission.id, submission.author.name, submission.approved_by))
                 
                 # Flair the submitter (Primary Objective)
                 #   (Flair should come before the sticky to prevent
@@ -123,10 +117,8 @@ while True:
                 if submission.author_flair_css_class not in ['w', 'practitioner', 'AMAGuest', 'researcher']:
                     flairn=flair(submission.author.name)
                     print('  Flair: \'OC: {0}\' ({1})'.format(flairn, 'ocmaker'))
-                    l.write('\n  Flair: \'OC: {0}\' ({1})'.format(flairn, 'ocmaker'))
                 else:
                     print('  Flair: \'{0}\' ({1})\n'.format(submission.author_flair_text, submission.author_flair_css_class))
-                    l.write('\n  Flair: \'{0}\' ({1})\n\n'.format(submission.author_flair_text, submission.author_flair_css_class))
                 
                 # Call a function to sticky (Primary Objective) 
                 sticky(submission)
@@ -136,17 +128,14 @@ while True:
                 f.write('{0} '.format(submission.id))
                 f.close()
             
-            l.close()
-            
         # Perform Secondary Objectives
         chkinbox()
+        time.sleep(5)
 
     # Exception list for when Reddit inevitably screws up
     except praw.exceptions.APIException:
         print('\n\nException happened.\nTaking a coffee break.\n')
-        l.write('\n\nException happened.\nTaking a coffee break.\n\n')
         time.sleep(30)
     except prawcore.exceptions.ServerError:
         print('\n\nReddit\'s famous 503 error occurred.\nTaking a coffee break.\n')
-        l.write('\n\nReddit\'s famous 503 error occurred.\nTaking a coffee break.\n\n')
         time.sleep(180)
