@@ -2,8 +2,9 @@
 
 **Table of Contents**
 1. [Introduction](https://github.com/zonination/oc-bot#introduction)    
-2. [Primary Operation](https://github.com/zonination/oc-bot#primary-operation)    
-    2.1 [Secondary Operations](https://github.com/zonination/oc-bot#secondary-operations)
+2. [Functions](https://github.com/zonination/oc-bot#functions)
+    2.1 [Primary Operation](https://github.com/zonination/oc-bot#primary-operation)    
+    2.2 [Secondary Operations](https://github.com/zonination/oc-bot#secondary-operations)
 
 ## Introduction
 
@@ -17,7 +18,9 @@
 * Relationship: Currently dating zonination
 * Address: 127.0.0.1
 
-## Primary Operation
+## Functions
+
+### Primary Operation
 
 **IF:**
 * Post has the text `[OC]` in the title AND
