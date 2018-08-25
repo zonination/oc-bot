@@ -48,7 +48,7 @@ def sticky(submission):
     print('  Citation ID: {0}'.format(earliest.id))
     
     # Construct the reply sticky
-    reply = 'Thank you for your Original Content, /u/{0}!  \n**Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{1}) for this thread\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{0}\"+title%3A[OC]&sort=new&restrict_sr=on)\n\nI hope this sticky assists you in having an informed discussion in this thread, or inspires you to [remix](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) this data. For more information, please [read this Wiki page](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair).\n\n---\n\n^^OC-Bot&nbsp;v2.0 ^^| ^^[Fork&nbsp;with&nbsp;my&nbsp;code](https://github.com/zonination/oc-bot) ^^| ^^[Message&nbsp;the&nbsp;mods](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Assistance%20with%20the%20bot)'.format(submission.author.name, earliest.permalink)
+    reply = 'Thank you for your Original Content, /u/{0}!  \n**Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{1}) for this thread\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{0}\"+title%3A[OC]&sort=new&restrict_sr=on)\n\nI hope this sticky assists you in having an informed discussion in this thread, or inspires you to [remix](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) this data. For more information, please [read this Wiki page](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair).\n\n---\n\n^^OC-Bot&nbsp;v2.01 ^^| ^^[Fork&nbsp;with&nbsp;my&nbsp;code](https://github.com/zonination/oc-bot) ^^| ^^[Suggest&nbsp;haikus](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Suggestion%20for%20a%20haiku)'.format(submission.author.name, earliest.permalink)
     submission.reply(reply).mod.distinguish(sticky=True)
     
     # Grab latest sticky ID
@@ -63,7 +63,9 @@ def flair(author):
     for post in r.subreddit(sub).search('author:"{0}" nsfw:0'.format(author), limit=1000, syntax='lucene'):
         if (post.approved_by is not None) and re.search('([\[\(\{]([Oo][Cc])[\]\}\)])', str(post.title)):
             n = n+1
-    # Redo search for NSFW posts
+    # Search for NSFW posts
+    #   (I had to include a separate counting function because
+    #    Reddit Search doesn't include NSFW posts by default.)
     for post in r.subreddit(sub).search('author:"{0}" nsfw:1'.format(author), limit=1000, syntax='lucene'):
         if (post.approved_by is not None) and re.search('([\[\(\{]([Oo][Cc])[\]\}\)])', str(post.title)):
             n = n+1
@@ -72,9 +74,10 @@ def flair(author):
 
 
 # Define functions to aid in Secondary Objectives
-# Reply to messages
+# Reply to messages (Secondary Objective)
 def chkinbox():
     for item in r.inbox.unread(limit=100):
+        
         # For comment replies
         if item in r.inbox.comment_replies(limit=100):
             print('Comment reply from /u/{0}'.format(item.author))
@@ -82,11 +85,13 @@ def chkinbox():
             item.reply(poetry)
             print('{0}\n'.format(poetry))
             item.mark_read()
+        
         # For reddit PMs from confused users
         if item in r.inbox.messages(limit=100):
-            print('Message from /u/{0}'.format(item.author))
+            print('Private message from /u/{0}'.format(item.author))
             item.reply('Hi. I would like to reply to your message, but I am just a bot.\n\nPlease [contact the mods](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Assistance%20with%20the%20bot) to get a human from /r/dataisbeautiful if your message is urgent.')
-            print('  Sent reply to contact mods')
+            print('  Sent instructions to contact mods')
+            # Let the mods know of the PM from the user
             r.redditor('/r/dataisbeautiful').message('Message from /u/{0}'.format(item.author), 'I have a message in my inbox from /u/{0}. In case this is important, [you may wish to contact them](https://www.reddit.com/message/compose?from_sr=dataisbeautiful&to={0}&subject={1}). (Be sure to select /r/dataisbeautiful from the drop-down menu). Below is what I received from them in full:\n\n---\n\n**{1}:**  \n{2}'.format(item.author, item.subject, item.body))
             print('  Forwarded message to /r/dataisbeautiful\n')
             item.mark_read()
@@ -96,42 +101,62 @@ def chkinbox():
 
 # Main Loop for All Objectives
 while True:
-    try:
-        # Main loop for Primary Objective
+    try:    
+        # Schedule a reflair every 8 hours outside the Main loop (5760 periods of 5 seconds)
+        for timer in range(1, 5760):
+            
+            # Main loop for Primary Objective
+            for submission in r.subreddit(sub).hot(limit=100):
+                
+                # Load records (threads IDs that have already been operated on)
+                f=open('.record.txt', 'r')
+                slist=f.read().split(' ')
+                f.close
+                
+                # Check if the thread is valid (Primary Objective)
+                if (re.search('[\[\(][oO][cC][\]\)]', submission.title) is not None) and (submission.approved_by is not None) and (submission.id not in slist):
+                    
+                    # Initial printout if thread is valid
+                    print('{0}\n  Submission ID: {1}\n  Author: {2}\n  Approved by: {3}'.format(submission.title,submission.id, submission.author.name, submission.approved_by))
+                    
+                    # Flair the submitter (Primary Objective)
+                    #   (I ordered these functions specifically to reduce the 
+                    #    annoyance to the dataisbeautiful poster in the in the
+                    #    case of an exception. Silently flairing first, followed
+                    #    by Stickying and an immediately logging the post. This way,
+                    #    we reduce get multiple attempts at stickying in case
+                    #    of a 503 error, for instance.)
+                    if submission.author_flair_css_class not in ['w', 'practitioner', 'AMAGuest', 'researcher']:
+                        flairn=flair(submission.author.name)
+                        print('  Flair: \'OC: {0}\' ({1})'.format(flairn, 'ocmaker'))
+                    else:
+                        print('  Flair: \'{0}\' ({1})\n'.format(submission.author_flair_text, submission.author_flair_css_class))
+                    
+                    # Call a function to sticky (Primary Objective) 
+                    sticky(submission)
+                    
+                    # Print to a log file (Primary Objective)
+                    f=open('.record.txt', 'a')
+                    f.write('{0} '.format(submission.id))
+                    f.close()
+                
+            # Perform Secondary Objectives (check inbox)
+            chkinbox()
+            time.sleep(5)
+            
+        # Reflairing session
+        #   (Reflairing is necessary 3x/day due to improper indexing of 
+        #    Reddit's Search feature. Some items will appear in Reddit
+        #    Search LONG after they are approved, which means OC authors
+        #    will have to put up with 'OC: 0' flair on occasion. This is
+        #    intended to correct for Reddit's oversight. Thanks Obama.)
+        print('Reflairing session initiating')
         for submission in r.subreddit(sub).hot(limit=100):
-            
-            # Load records
-            f=open('.record.txt', 'r')
-            slist=f.read().split(' ')
-            f.close
-            
-            # Check if the thread is valid (Primary Objective)
-            if (re.search('[\[\(][oO][cC][\]\)]', submission.title) is not None) and (submission.approved_by is not None) and (submission.id not in slist):
-                
-                # Initial printout
-                print('{0}\n  Submission ID: {1}\n  Author: {2}\n  Approved by: {3}'.format(submission.title,submission.id, submission.author.name, submission.approved_by))
-                
-                # Flair the submitter (Primary Objective)
-                #   (Flair should come before the sticky to prevent
-                #    multiple stickies in the case of an exception.)
-                if submission.author_flair_css_class not in ['w', 'practitioner', 'AMAGuest', 'researcher']:
-                    flairn=flair(submission.author.name)
-                    print('  Flair: \'OC: {0}\' ({1})'.format(flairn, 'ocmaker'))
-                else:
-                    print('  Flair: \'{0}\' ({1})\n'.format(submission.author_flair_text, submission.author_flair_css_class))
-                
-                # Call a function to sticky (Primary Objective) 
-                sticky(submission)
-                
-                # Print to a log file (Primary Objective)
-                f=open('.record.txt', 'a')
-                f.write('{0} '.format(submission.id))
-                f.close()
-            
-        # Perform Secondary Objectives
-        chkinbox()
-        time.sleep(5)
-
+            if (submission.author_flair_css_class not in ['w', 'practitioner', 'AMAGuest', 'researcher']) and (re.search('[\[\(][oO][cC][\]\)]', submission.title) is not None) and (submission.approved_by is not None):
+                flairn=flair(submission.author.name)
+                print('Reflairing {0} with \'OC: {1}\''.format(submission.author.name, flairn))
+        print('Reflairing complete.\n')
+        
     # Exception list for when Reddit inevitably screws up
     except praw.exceptions.APIException:
         print('\n\nException happened.\nTaking a coffee break.\n')
