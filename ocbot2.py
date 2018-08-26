@@ -48,7 +48,7 @@ def sticky(submission):
     print('  Citation ID: {0}'.format(earliest.id))
     
     # Construct the reply sticky
-    reply = 'Thank you for your Original Content, /u/{0}!  \n**Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{1}) for this thread\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{0}\"+title%3A[OC]&sort=new&restrict_sr=on)\n\nI hope this sticky assists you in having an informed discussion in this thread, or inspires you to [remix](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) this data. For more information, please [read this Wiki page](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair).\n\n---\n\n^^OC-Bot&nbsp;v2.01 ^^| ^^[Fork&nbsp;with&nbsp;my&nbsp;code](https://github.com/zonination/oc-bot) ^^| ^^[Suggest&nbsp;haikus](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Suggestion%20for%20a%20haiku)'.format(submission.author.name, earliest.permalink)
+    reply = 'Thank you for your Original Content, /u/{0}!  \n**Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{1}) for this thread\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{0}\"+title%3A[OC]&sort=new&restrict_sr=on)\n\nI hope this sticky assists you in having an informed discussion in this thread, or inspires you to [remix](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) this data. For more information, please [read this Wiki page](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair).\n\n---\n\n^^OC-Bot&nbsp;v2.01 ^^| ^^[Fork&nbsp;with&nbsp;my&nbsp;code](https://github.com/zonination/oc-bot) ^^| ^^[Message&nbsp;the&nbsp;Mods](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Assistance%20with%20the%20Bot)'.format(submission.author.name, earliest.permalink)
     submission.reply(reply).mod.distinguish(sticky=True)
     
     # Grab latest sticky ID
@@ -64,12 +64,16 @@ def flair(author):
         if (post.approved_by is not None) and re.search('([\[\(\{]([Oo][Cc])[\]\}\)])', str(post.title)):
             n = n+1
     # Search for NSFW posts
-    #   (I had to include a separate counting function because
-    #    Reddit Search doesn't include NSFW posts by default.)
+    #   (I had to include a separate function because Reddit Search
+    #    doesn't include NSFW posts by default. Thanks Obama.)
     for post in r.subreddit(sub).search('author:"{0}" nsfw:1'.format(author), limit=1000, syntax='lucene'):
         if (post.approved_by is not None) and re.search('([\[\(\{]([Oo][Cc])[\]\}\)])', str(post.title)):
             n = n+1
     r.subreddit(sub).flair.set(author, 'OC: {0}'.format(n), 'ocmaker')
+    # In the cases where the post doesn't show up in Reddit Search
+    # yet, at least give them 1 until the next reflair cycle.
+    if n==0:
+        return 1
     return n
 
 
@@ -82,7 +86,7 @@ def chkinbox():
         if item in r.inbox.comment_replies(limit=100):
             print('Comment reply from /u/{0}'.format(item.author))
             poetry = haiku.h()
-            item.reply(poetry)
+            item.reply('{0}\n\n^^OC-Bot&nbsp;v2.01 ^^| ^^[Suggest&nbsp;a&nbsp;haiku](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Suggestion%20for%20a%20Haiku&message=For%20this%20OC%20bot,%20%20%0AI%27d%20like%20to%20submit%20a%20poem%20%20%0Aof%20my%20own%20writing:%0a%0a)'.format(poetry))
             print('{0}\n'.format(poetry))
             item.mark_read()
         
@@ -102,14 +106,14 @@ def chkinbox():
 # Main Loop for All Objectives
 while True:
     try:    
-        # Schedule a reflair every 8 hours outside the Main loop (5760 periods of 5 seconds)
+        # Schedule a reflair session every 8 hours outside the Main loop (5760 periods of 5 seconds)
         for timer in range(1, 5760):
             
             # Main loop for Primary Objective
             for submission in r.subreddit(sub).hot(limit=100):
                 
                 # Load records (threads IDs that have already been operated on)
-                f=open('.record.txt', 'r')
+                f=open('.log.txt', 'r')
                 slist=f.read().split(' ')
                 f.close
                 
@@ -121,11 +125,11 @@ while True:
                     
                     # Flair the submitter (Primary Objective)
                     #   (I ordered these functions specifically to reduce the 
-                    #    annoyance to the dataisbeautiful poster in the in the
+                    #    annoyance to the poster in the in the rare
                     #    case of an exception. Silently flairing first, followed
                     #    by Stickying and an immediately logging the post. This way,
                     #    we reduce get multiple attempts at stickying in case
-                    #    of a 503 error, for instance.)
+                    #    a 503 error happens in-between.)
                     if submission.author_flair_css_class not in ['w', 'practitioner', 'AMAGuest', 'researcher']:
                         flairn=flair(submission.author.name)
                         print('  Flair: \'OC: {0}\' ({1})'.format(flairn, 'ocmaker'))
@@ -136,7 +140,7 @@ while True:
                     sticky(submission)
                     
                     # Print to a log file (Primary Objective)
-                    f=open('.record.txt', 'a')
+                    f=open('.log.txt', 'a')
                     f.write('{0} '.format(submission.id))
                     f.close()
                 
@@ -148,13 +152,13 @@ while True:
         #   (Reflairing is necessary 3x/day due to improper indexing of 
         #    Reddit's Search feature. Some items will appear in Reddit
         #    Search LONG after they are approved, which means OC authors
-        #    will have to put up with 'OC: 0' flair on occasion. This is
+        #    will have to put up with incorrect flair on occasion. This is
         #    intended to correct for Reddit's oversight. Thanks Obama.)
         print('Reflairing session initiating')
         for submission in r.subreddit(sub).hot(limit=100):
             if (submission.author_flair_css_class not in ['w', 'practitioner', 'AMAGuest', 'researcher']) and (re.search('[\[\(][oO][cC][\]\)]', submission.title) is not None) and (submission.approved_by is not None):
                 flairn=flair(submission.author.name)
-                print('Reflairing {0} with \'OC: {1}\''.format(submission.author.name, flairn))
+                print('  Flaired {0} with \'OC: {1}\''.format(submission.author.name, flairn))
         print('Reflairing complete.\n')
         
     # Exception list for when Reddit inevitably screws up
