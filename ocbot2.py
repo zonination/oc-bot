@@ -8,7 +8,7 @@ from praw.models import MoreComments
 
 # Import custom libraries
 import rlogin # Login info for the bot (not included in github)
-import haiku  # Haiku module (file too long and distracting to be included)
+import haiku  # Haiku module (file too long to be included in main)
 
 # Log in to the bot
 r=rlogin.rl()
@@ -69,11 +69,11 @@ def flair(author):
     for post in r.subreddit(sub).search('author:"{0}" nsfw:1'.format(author), limit=1000, syntax='lucene'):
         if (post.approved_by is not None) and re.search('([\[\(\{]([Oo][Cc])[\]\}\)])', str(post.title)):
             n = n+1
-    r.subreddit(sub).flair.set(author, 'OC: {0}'.format(n), 'ocmaker')
     # In the cases where the post doesn't show up in Reddit Search
     # yet, at least give them 1 until the next reflair cycle.
     if n==0:
-        return 1
+        n=1
+    r.subreddit(sub).flair.set(author, 'OC: {0}'.format(n), 'ocmaker')
     return n
 
 
@@ -134,7 +134,7 @@ while True:
                         flairn=flair(submission.author.name)
                         print('  Flair: \'OC: {0}\' ({1})'.format(flairn, 'ocmaker'))
                     else:
-                        print('  Flair: \'{0}\' ({1})\n'.format(submission.author_flair_text, submission.author_flair_css_class))
+                        print('  Flair: \'{0}\' ({1})'.format(submission.author_flair_text, submission.author_flair_css_class))
                     
                     # Call a function to sticky (Primary Objective) 
                     sticky(submission)
@@ -163,8 +163,16 @@ while True:
         
     # Exception list for when Reddit inevitably screws up
     except praw.exceptions.APIException:
-        print('\n\nException happened.\nTaking a coffee break.\n')
+        print('\n\nAn API exception happened.\nTaking a coffee break.\n')
         time.sleep(30)
     except prawcore.exceptions.ServerError:
         print('\n\nReddit\'s famous 503 error occurred.\nTaking a coffee break.\n')
         time.sleep(180)
+    except prawcore.exceptions.InvalidToken:
+        print('\n401 error: Token needs refreshing.\nTaking a coffee break.\n')
+        time.sleep(30)
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except:
+        print('\n\nException happened.\nTaking a coffee break.\n')
+        time.sleep(30)
