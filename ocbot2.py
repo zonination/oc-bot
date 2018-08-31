@@ -11,7 +11,7 @@ import rlogin # Login info for the bot (not included in github)
 import haiku  # Haiku module (file too long to be included in main)
 
 # Log in to the bot
-r=rlogin.rl()
+r=rlogin.oc()
 
 # Designate initial conditions
 sub = 'dataisbeautiful'
@@ -48,7 +48,7 @@ def sticky(submission):
     print('  Citation ID: {0}'.format(earliest.id))
     
     # Construct the reply sticky
-    reply = 'Thank you for your Original Content, /u/{0}!  \n**Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{1}) for this thread\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{0}\"+title%3A[OC]&sort=new&restrict_sr=on)\n\nI hope this sticky assists you in having an informed discussion in this thread, or inspires you to [remix](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) this data. For more information, please [read this Wiki page](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair).\n\n---\n\n^^OC-Bot&nbsp;v2.01 ^^| ^^[Fork&nbsp;with&nbsp;my&nbsp;code](https://github.com/zonination/oc-bot) ^^| ^^[Message&nbsp;the&nbsp;Mods](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Assistance%20with%20the%20Bot)'.format(submission.author.name, earliest.permalink)
+    reply = 'Thank you for your Original Content, /u/{0}!  \n**Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{1}) for this thread\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{0}\"+title%3A[OC]&sort=new&include_over_18=on&restrict_sr=on)\n\nI hope this sticky assists you in having an informed discussion in this thread, or inspires you to [remix](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) this data. For more information, please [read this Wiki page](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair).\n\n---\n\n^^OC-Bot&nbsp;v2.02 ^^| ^^[Fork&nbsp;with&nbsp;my&nbsp;code](https://github.com/zonination/oc-bot) ^^| ^^[Message&nbsp;the&nbsp;Mods](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Assistance%20with%20the%20Bot)'.format(submission.author.name, earliest.permalink)
     submission.reply(reply).mod.distinguish(sticky=True)
     
     # Grab latest sticky ID
@@ -60,13 +60,13 @@ def sticky(submission):
 def flair(author):
     n = 0
     # Search non-NSFW posts
-    for post in r.subreddit(sub).search('author:"{0}" nsfw:0'.format(author), limit=1000, syntax='lucene'):
+    for post in r.subreddit(sub).search('author:"{0}" title:OC nsfw:0'.format(author), limit=1000, syntax='lucene'):
         if (post.approved_by is not None) and re.search('([\[\(\{]([Oo][Cc])[\]\}\)])', str(post.title)):
             n = n+1
     # Search for NSFW posts
     #   (I had to include a separate function because Reddit Search
     #    doesn't include NSFW posts by default. Thanks Obama.)
-    for post in r.subreddit(sub).search('author:"{0}" nsfw:1'.format(author), limit=1000, syntax='lucene'):
+    for post in r.subreddit(sub).search('author:"{0}" title:OC nsfw:1'.format(author), limit=1000, syntax='lucene'):
         if (post.approved_by is not None) and re.search('([\[\(\{]([Oo][Cc])[\]\}\)])', str(post.title)):
             n = n+1
     # In the cases where the post doesn't show up in Reddit Search
@@ -86,7 +86,7 @@ def chkinbox():
         if item in r.inbox.comment_replies(limit=100):
             print('Comment reply from /u/{0}'.format(item.author))
             poetry = haiku.h()
-            item.reply('{0}\n\n^^OC-Bot&nbsp;v2.01 ^^| ^^[Suggest&nbsp;a&nbsp;haiku](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Suggestion%20for%20a%20Haiku&message=For%20this%20OC%20bot,%20%20%0AI%27d%20like%20to%20submit%20a%20poem%20%20%0Aof%20my%20own%20writing:%0a%0a)'.format(poetry))
+            item.reply('{0}\n\n^^OC-Bot&nbsp;v2.02 ^^| ^^[Suggest&nbsp;a&nbsp;haiku](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Suggestion%20for%20a%20Haiku&message=For%20this%20OC%20bot,%20%20%0AI%27d%20like%20to%20submit%20a%20poem%20%20%0Aof%20my%20own%20writing:%0a%0a)'.format(poetry))
             print('{0}\n'.format(poetry))
             item.mark_read()
         
