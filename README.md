@@ -35,5 +35,6 @@
 ### Secondary operations
 
 * The bot replies to comments made on the sticky with a randomly-generated haiku.
+* The bot replies to username mentions with a randomly-generated haiku.
 * The bot replies to direct messages (PM) that she cannot help, but should contact the mods of /r/dataisbeautiful to help.
 * The bot forwards direct messages (PM) to the mods of /r/dataisbeautiful
