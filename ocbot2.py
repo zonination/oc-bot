@@ -90,6 +90,14 @@ def chkinbox():
             print('{0}\n'.format(poetry))
             item.mark_read()
         
+        # Same deal for /u/ mentions
+        if item in r.inbox.mentions(limit=100):
+            print('Comment reply from /u/{0}'.format(item.author))
+            poetry = haiku.h()
+            item.reply('{0}\n\n^^{1} ^^| ^^[Suggest&nbsp;a&nbsp;haiku](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Suggestion%20for%20a%20Haiku&message=For%20this%20OC%20bot,%20%20%0AI%27d%20like%20to%20submit%20a%20poem%20%20%0Aof%20my%20own%20writing:%0a%0a)'.format(poetry, version))
+            print('{0}\n'.format(poetry))
+            item.mark_read()
+        
         # For reddit PMs from confused users
         if item in r.inbox.messages(limit=100):
             print('Private message from /u/{0}'.format(item.author))
