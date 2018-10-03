@@ -43,7 +43,7 @@ def sticky(submission):
     for comment in submission.comments:
         if isinstance(comment, MoreComments):
             continue
-        if (comment.created_utc < time) and (comment.author.name == submission.author.name):
+        if (comment.created_utc < time) and (comment.author is not None) and (comment.author.name == submission.author.name):
             earliest = comment
             time = earliest.created_utc
     print('  Citation ID: {0}'.format(earliest.id))
