@@ -15,7 +15,7 @@ r=rlogin.oc()
 
 # Designate initial conditions
 sub     = 'dataisbeautiful'
-version = 'OC-Bot&nbsp;v2.2.0'
+version = 'OC-Bot&nbsp;v2.2.1'
 
 # -------------------------
 # Primary Objective
@@ -57,14 +57,15 @@ def sticky(submission):
         for comment in r.redditor('OC-bot').comments.new(limit=1):
             last = comment.id
         print('  Sticky ID: {0}\n'.format(last))
-        return None
+        return True
     except UnboundLocalError:
         print('Rule 3 issue: No citation.\n')
+        submission.mod.flair(text='R3: No/improper citation', css_class='')
         submission.reply('!filter Rule 3 issue: No citation.')
         for comment in r.redditor('OC-bot').comments.new(limit=1):
             last = comment.id
         r.comment(last).delete()
-        return None
+        return False
 
 def flair(author):
     n = 0
@@ -146,6 +147,16 @@ while True:
                     #    by Stickying and an immediately logging the post. This way,
                     #    we reduce get multiple attempts at stickying in case
                     #    a 503 error happens in-between.)
+                    # Call a function to sticky (Primary Objective) 
+                    if sticky(submission):
+                        submission.mod.flair(text='OC', css_class='oc')
+                        # Print to a log file (Primary Objective)
+                        f=open('.log.txt', 'a')
+                        f.write('{0} '.format(submission.id))
+                        f.close()
+                    else:
+                        break
+                    
                     if submission.author_flair_css_class not in ['w', 'practitioner', 'AMAGuest', 'researcher']:
                         flairn=flair(submission.author.name)
                         print('  Flair: \'OC: {0}\' ({1})'.format(flairn, 'ocmaker'))
@@ -153,14 +164,6 @@ while True:
                     else:
                         print('  Flair: \'{0}\' ({1})'.format(submission.author_flair_text, submission.author_flair_css_class))
                     
-                    # Call a function to sticky (Primary Objective) 
-                    sticky(submission)
-                    submission.mod.flair(text='OC', css_class='oc')
-                    
-                    # Print to a log file (Primary Objective)
-                    f=open('.log.txt', 'a')
-                    f.write('{0} '.format(submission.id))
-                    f.close()
                 
             # Perform Secondary Objectives (check inbox)
             chkinbox()
