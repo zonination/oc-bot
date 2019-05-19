@@ -146,7 +146,6 @@ while True:
                     #    by Stickying and an immediately logging the post. This way,
                     #    we reduce get multiple attempts at stickying in case
                     #    a 503 error happens in-between.)
-                    submission.mod.flair(text='OC', css_class='oc')
                     if submission.author_flair_css_class not in ['w', 'practitioner', 'AMAGuest', 'researcher']:
                         flairn=flair(submission.author.name)
                         print('  Flair: \'OC: {0}\' ({1})'.format(flairn, 'ocmaker'))
@@ -156,6 +155,7 @@ while True:
                     
                     # Call a function to sticky (Primary Objective) 
                     sticky(submission)
+                    submission.mod.flair(text='OC', css_class='oc')
                     
                     # Print to a log file (Primary Objective)
                     f=open('.log.txt', 'a')
