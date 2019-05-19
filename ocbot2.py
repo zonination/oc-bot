@@ -15,7 +15,7 @@ r=rlogin.oc()
 
 # Designate initial conditions
 sub     = 'dataisbeautiful'
-version = 'OC-Bot&nbsp;v2.04'
+version = 'OC-Bot&nbsp;v2.2.0'
 
 # -------------------------
 # Primary Objective
@@ -38,25 +38,33 @@ version = 'OC-Bot&nbsp;v2.04'
 
 # Define functions to aid in Primary Objectives
 def sticky(submission):
-    # Scan comments for the oldest by OP
-    time = 99999999999
-    for comment in submission.comments:
-        if isinstance(comment, MoreComments):
-            continue
-        if (comment.created_utc < time) and (comment.author is not None) and (comment.author.name == submission.author.name):
-            earliest = comment
-            time = earliest.created_utc
-    print('  Citation ID: {0}'.format(earliest.id))
-    
-    # Construct the reply sticky
-    reply = 'Thank you for your Original Content, /u/{0}!  \n**Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{1}) for this thread\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{0}\"+title%3AOC&sort=new&include_over_18=on&restrict_sr=on)\n\nI hope this sticky assists you in having an informed discussion in this thread, or inspires you to [remix](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) this data. For more information, please [read this Wiki page](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair).\n\n---\n\n^^{2} ^^| ^^[Fork&nbsp;with&nbsp;my&nbsp;code](https://github.com/zonination/oc-bot) ^^| ^^[Message&nbsp;the&nbsp;Mods](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Assistance%20with%20the%20Bot)'.format(submission.author.name, earliest.permalink, version)
-    submission.reply(reply).mod.distinguish(sticky=True)
-    
-    # Grab sticky ID that OC bot just made
-    for comment in r.redditor('OC-bot').comments.new(limit=1):
-        last = comment.id
-    print('  Sticky ID: {0}\n'.format(last))
-    return None
+    try:
+        # Scan comments for the oldest by OP
+        time = 99999999999
+        for comment in submission.comments:
+            if isinstance(comment, MoreComments):
+                continue
+            if (comment.created_utc < time) and (comment.author is not None) and (comment.author.name == submission.author.name):
+                earliest = comment
+                time = earliest.created_utc
+        print('  Citation ID: {0}'.format(earliest.id))
+        
+        # Construct the reply sticky
+        reply = 'Thank you for your [Original Content](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_what_counts_as_original_content_.28oc.29.3F), /u/{0}!  \n**Here is some important information about this post:**\n\n* [Author\'s citations](https://www.reddit.com{1}) including **source data** and **tool used** to generate this graphic.\n* [All OC posts by this author](https://www.reddit.com/r/dataisbeautiful/search?q=author%3A\"{0}\"+title%3AOC&sort=new&include_over_18=on&restrict_sr=on)\n\nNot satisfied with this visual? Think you can do better? [Remix this visual](https://www.reddit.com/r/dataisbeautiful/wiki/index#wiki_remixing) with the [data in the citation](https://www.reddit.com{1}), or read the !Sidebar summon below.\n\n---\n\n^^{2} ^^| ^^[Fork&nbsp;with&nbsp;my&nbsp;code](https://github.com/zonination/oc-bot) ^^| ^^[How&nbsp;I&nbsp;Work](https://www.reddit.com/r/dataisbeautiful/wiki/flair#wiki_oc_flair)'.format(submission.author.name, earliest.permalink, version)
+        submission.reply(reply).mod.distinguish(sticky=True)
+        
+        # Grab sticky ID that OC bot just made
+        for comment in r.redditor('OC-bot').comments.new(limit=1):
+            last = comment.id
+        print('  Sticky ID: {0}\n'.format(last))
+        return None
+    except UnboundLocalError:
+        print('Rule 3 issue: No citation.\n')
+        submission.reply('!filter Rule 3 issue: No citation.')
+        for comment in r.redditor('OC-bot').comments.new(limit=1):
+            last = comment.id
+        r.comment(last).delete()
+        return None
 
 def flair(author):
     n = 0
@@ -138,6 +146,7 @@ while True:
                     #    by Stickying and an immediately logging the post. This way,
                     #    we reduce get multiple attempts at stickying in case
                     #    a 503 error happens in-between.)
+                    submission.mod.flair(text='OC', css_class='oc')
                     if submission.author_flair_css_class not in ['w', 'practitioner', 'AMAGuest', 'researcher']:
                         flairn=flair(submission.author.name)
                         print('  Flair: \'OC: {0}\' ({1})'.format(flairn, 'ocmaker'))
@@ -184,8 +193,14 @@ while True:
     except prawcore.exceptions.InvalidToken:
         print('\n401 error: Token needs refreshing.\nTaking a coffee break.\n')
         time.sleep(30)
+    # Probably another goddamn Snoosletter that the bot can't reply to.
+    except prawcore.exceptions.Forbidden:
+        print('  Unable to respond. Marking as read.\n')
+        for item in r.inbox.unread(limit=100):
+            if item in r.inbox.messages(limit=100):
+                item.mark_read()
     except (KeyboardInterrupt, SystemExit):
         raise
     except:
-        print('\nException happened.\nTaking a coffee break.\n')
+        print('\nException happened (OC-Bot).\nTaking a coffee break.\n')
         time.sleep(30)
