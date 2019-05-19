@@ -15,7 +15,7 @@ r=rlogin.oc()
 
 # Designate initial conditions
 sub     = 'dataisbeautiful'
-version = 'OC-Bot&nbsp;v2.2.1'
+version = 'OC-Bot&nbsp;v2.2.2'
 
 # -------------------------
 # Primary Objective
@@ -56,7 +56,7 @@ def sticky(submission):
         # Grab sticky ID that OC bot just made
         for comment in r.redditor('OC-bot').comments.new(limit=1):
             last = comment.id
-        print('  Sticky ID: {0}\n'.format(last))
+        print('  Sticky ID: {0}'.format(last))
         return True
     except UnboundLocalError:
         print('Rule 3 issue: No citation.\n')
@@ -159,10 +159,10 @@ while True:
                     
                     if submission.author_flair_css_class not in ['w', 'practitioner', 'AMAGuest', 'researcher']:
                         flairn=flair(submission.author.name)
-                        print('  Flair: \'OC: {0}\' ({1})'.format(flairn, 'ocmaker'))
+                        print('  Flair: \'OC: {0}\' ({1})\n'.format(flairn, 'ocmaker'))
                         r.subreddit(sub).flair.set(submission.author.name, 'OC: {0}'.format(flairn), 'ocmaker')
                     else:
-                        print('  Flair: \'{0}\' ({1})'.format(submission.author_flair_text, submission.author_flair_css_class))
+                        print('  Flair: \'{0}\' ({1})\n'.format(submission.author_flair_text, submission.author_flair_css_class))
                     
                 
             # Perform Secondary Objectives (check inbox)
@@ -204,6 +204,6 @@ while True:
                 item.mark_read()
     except (KeyboardInterrupt, SystemExit):
         raise
-    except:
-        print('\nException happened (OC-Bot).\nTaking a coffee break.\n')
-        time.sleep(30)
+#    except:
+#        print('\nException happened (OC-Bot).\nTaking a coffee break.\n')
+#        time.sleep(30)
