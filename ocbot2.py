@@ -15,7 +15,7 @@ r=rlogin.oc()
 
 # Designate initial conditions
 sub     = 'dataisbeautiful'
-version = 'OC-Bot&nbsp;v2.2.2'
+version = 'OC-Bot&nbsp;v2.2.3'
 
 # -------------------------
 # Primary Objective
@@ -94,10 +94,12 @@ def chkinbox():
         # For comment replies
         if item in r.inbox.comment_replies(limit=100):
             print('Comment reply from /u/{0}'.format(item.author))
-            poetry = haiku.h()
-            item.reply('{0}\n\n^^{1} ^^| ^^[Suggest&nbsp;a&nbsp;haiku](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Suggestion%20for%20a%20Haiku&message=For%20this%20OC%20bot,%20%20%0AI%27d%20like%20to%20submit%20a%20poem%20%20%0Aof%20my%20own%20writing:%0a%0a)'.format(poetry, version))
-            print('{0}\n'.format(poetry))
+            if item.author != 'AutoModerator':
+                poetry = haiku.h()
+                item.reply('{0}\n\n^^{1} ^^| ^^[Suggest&nbsp;a&nbsp;haiku](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Suggestion%20for%20a%20Haiku&message=For%20this%20OC%20bot,%20%20%0AI%27d%20like%20to%20submit%20a%20poem%20%20%0Aof%20my%20own%20writing:%0a%0a)'.format(poetry, version))
+                print('{0}'.format(poetry))
             item.mark_read()
+            print('')
         
         # Same deal for /u/ mentions
         if item in r.inbox.mentions(limit=100):
@@ -110,12 +112,14 @@ def chkinbox():
         # For reddit PMs from confused users
         if item in r.inbox.messages(limit=100):
             print('Private message from /u/{0}'.format(item.author))
-            item.reply('Hi. I would like to reply to your message, but I am just a bot.\n\nPlease [contact the mods](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Assistance%20with%20the%20bot) to get a human from /r/dataisbeautiful if your message is urgent.')
-            print('  Sent instructions to contact mods')
-            # Let the mods know of the PM from the user
-            r.redditor('/r/dataisbeautiful').message('Message from /u/{0}'.format(item.author), 'I have a message in my inbox from /u/{0}. In case this is important, [you may wish to contact them](https://www.reddit.com/message/compose?from_sr=dataisbeautiful&to={0}&subject={1}). (Be sure to select /r/dataisbeautiful from the drop-down menu). Below is what I received from them in full:\n\n---\n\n**{1}**\n\n{2}'.format(item.author, item.subject, item.body))
-            print('  Forwarded message to /r/dataisbeautiful\n')
+            if item.author != 'AutoModerator':
+                item.reply('Hi. I would like to reply to your message, but I am just a bot.\n\nPlease [contact the mods](https://www.reddit.com/message/compose?to=%2Fr%2Fdataisbeautiful&subject=Assistance%20with%20the%20bot) to get a human from /r/dataisbeautiful if your message is urgent.')
+                print('  Sent instructions to contact mods')
+                # Let the mods know of the PM from the user
+                r.redditor('/r/dataisbeautiful').message('Message from /u/{0}'.format(item.author), 'I have a message in my inbox from /u/{0}. In case this is important, [you may wish to contact them](https://www.reddit.com/message/compose?from_sr=dataisbeautiful&to={0}&subject={1}). (Be sure to select /r/dataisbeautiful from the drop-down menu). Below is what I received from them in full:\n\n---\n\n**{1}**\n\n{2}'.format(item.author, item.subject, item.body))
+                print('  Forwarded message to /r/dataisbeautiful')
             item.mark_read()
+            print('')
     return False
 
 
