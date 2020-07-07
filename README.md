@@ -15,7 +15,7 @@
 * Workplace: zonination's laptop
 * Conceived: [2017-03-06](https://www.reddit.com/r/RequestABot/comments/5xvuzd/python_bot_that_will_reward_users_who_mark_their/)
 * Birthday: 2017-03-13
-* Relationship: Currently dating zonination
+* Relationship: Currently deceased.
 * Address: 127.0.0.1
 
 ## Functions
